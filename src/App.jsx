@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Logout from "./pages/Logout";
 import UserLayout from "./components/UserLayout";
 import axios from "axios";
+import { serverEndpoint } from "./config/appConfig";
 
 function App() {
     // Value of userDetails represents whether the user
@@ -16,7 +17,7 @@ function App() {
 
     const isUserLoggedIn = async () => {
         try {
-            const response = await axios.post('http://localhost:5001/auth/is-user-logged-in', 
+            const response = await axios.post(`${serverEndpoint}/auth/is-user-logged-in`, 
                 {}, { withCredentials: true });
             
             setUserDetails(response.data.user);
@@ -70,7 +71,7 @@ function App() {
                 path="/dashboard"
                 element={
                     userDetails ? (
-                        <UserLayout>
+                        <UserLayout user={userDetails}>
                             <Dashboard user={userDetails} />
                         </UserLayout>
                     ) : (
