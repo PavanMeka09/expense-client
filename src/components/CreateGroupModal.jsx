@@ -1,11 +1,13 @@
 import axios from "axios";
 import { useState } from "react";
 import { serverEndpoint } from "../config/appConfig";
+import { useSelector } from 'react-redux';
 
 function CreateGroupModal({ show, onHide, onSuccess }) {
+    const user = useSelector((state) => state.userDetails);
     const [formData, setFormData] = useState({
-        name: '',
-        description: ''
+        name: "",
+        description: "",
     });
     const [errors, setErrors] = useState({});
 
@@ -19,7 +21,8 @@ function CreateGroupModal({ show, onHide, onSuccess }) {
         }
 
         if (formData.description.length < 3) {
-            newErrors.description = "Description must be atleast 3 characters long";
+            newErrors.description =
+                "Description must be atleast 3 characters long";
             isValid = false;
         }
 
@@ -32,8 +35,8 @@ function CreateGroupModal({ show, onHide, onSuccess }) {
         const value = e.target.value;
         setFormData({
             ...formData,
-            [name]: value
-        })
+            [name]: value,
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -41,16 +44,30 @@ function CreateGroupModal({ show, onHide, onSuccess }) {
 
         if (validate()) {
             try {
-                await axios.post(
-                    `${serverEndpoint}/groups/create`, 
+                const response = await axios.post(
+                    `${serverEndpoint}/groups/create`,
                     { name: formData.name, description: formData.description },
                     { withCredentials: true }
                 );
-                onSuccess();
+                const groupId = response.data.groupId;
+                onSuccess({
+                    name: formData.name,
+                    description: formData.description,
+                    _id: groupId,
+                    membersEmail: [user.email],
+                    paymentStatus: {
+                        amount: 0,
+                        currency: "INR",
+                        date: "2026-02-02T16:02:05.110Z",
+                        isPaid: false,
+                    },
+                    thumbnail: "",
+                    isPaid: false,
+                });
                 onHide();
             } catch (error) {
                 console.log(error);
-                setErrors({ message: 'Unable to add group, please try again'});
+                setErrors({ message: "Unable to add group, please try again" });
             }
         }
     };
@@ -66,14 +83,27 @@ function CreateGroupModal({ show, onHide, onSuccess }) {
                     <form onSubmit={handleSubmit}>
                         <div className="modal-header border-0">
                             <h5>Create Group</h5>
-                            <button type="button" className="btn-close" onClick={onHide}></button>
+                            <button
+                                type="button"
+                                className="btn-close"
+                                onClick={onHide}
+                            ></button>
                         </div>
                         <div className="modal-body">
                             <div className="mb-3">
-                                <label className="form-lable small fw-bold">Group Name</label>
-                                <input type="text" className={ errors.name ? 'form-control is-invalid' : 'form-control'} 
-                                    name="name" value={formData.name}
-                                    onChange={onChange} 
+                                <label className="form-lable small fw-bold">
+                                    Group Name
+                                </label>
+                                <input
+                                    type="text"
+                                    className={
+                                        errors.name
+                                            ? "form-control is-invalid"
+                                            : "form-control"
+                                    }
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={onChange}
                                 />
                                 {errors.name && (
                                     <div className="invalid-feedback">
@@ -82,9 +112,18 @@ function CreateGroupModal({ show, onHide, onSuccess }) {
                                 )}
                             </div>
                             <div className="mb-3">
-                                <label className="form-lable small fw-bold">Description</label>
-                                <input type="text" className={ errors.description ? 'form-control is-invalid' : 'form-control'}
-                                    name="description" value={formData.description}
+                                <label className="form-lable small fw-bold">
+                                    Description
+                                </label>
+                                <input
+                                    type="text"
+                                    className={
+                                        errors.description
+                                            ? "form-control is-invalid"
+                                            : "form-control"
+                                    }
+                                    name="description"
+                                    value={formData.description}
                                     onChange={onChange}
                                 />
                                 {errors.description && (
@@ -95,13 +134,15 @@ function CreateGroupModal({ show, onHide, onSuccess }) {
                             </div>
                         </div>
                         <div className="modal-footer border-0">
-                            <button type="button" 
+                            <button
+                                type="button"
                                 className="btn btn-light rounded-pill"
                                 onClick={onHide}
                             >
                                 Cancel
                             </button>
-                            <button type="submit" 
+                            <button
+                                type="submit"
                                 className="btn btn-primary mx-4 rounded-pill"
                             >
                                 Add

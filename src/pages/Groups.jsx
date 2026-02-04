@@ -24,6 +24,10 @@ function Groups() {
         }
     };
 
+    const handleAddGroupSuccess = (data) => {
+        groups.push(data);
+    };
+
     useEffect(() => {
         fetchGroups();
     }, []);
@@ -66,7 +70,7 @@ function Groups() {
                 </div>
             )}
 
-            <CreateGroupModal show={show} onHide={() => setShow(false)} onSuccess={() => fetchGroups()} />
+            <CreateGroupModal show={show} onHide={() => setShow(false)} onSuccess={handleAddGroupSuccess} />
         </div>
     );
 }
