@@ -8,15 +8,16 @@ import Logout from "./pages/Logout";
 import UserLayout from "./components/UserLayout";
 import axios from "axios";
 import { serverEndpoint } from "./config/appConfig";
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from "react-redux";
 import { SET_USER } from "./redux/user/action";
 import Groups from "./pages/Groups";
+import GroupExpenses from "./pages/GroupExpenses";
 
 function App() {
     const dispatch = useDispatch();
     // Value of userDetails represents whether the user
     // is logged in or not.
-    
+
     // useSelector takes in 1 function as input. Redux calls the function that
     // you pass to useSelector with all the values its storing/managing.
     // We need to take out userDetails since we're interested in userDetails object.
@@ -25,13 +26,16 @@ function App() {
 
     const isUserLoggedIn = async () => {
         try {
-            const response = await axios.post(`${serverEndpoint}/auth/is-user-logged-in`, 
-                {}, { withCredentials: true });
-            
+            const response = await axios.post(
+                `${serverEndpoint}/auth/is-user-logged-in`,
+                {},
+                { withCredentials: true }
+            );
+
             // setUserDetails(response.data.user);
             dispatch({
                 type: SET_USER,
-                payload: response.data.user
+                payload: response.data.user,
             });
         } catch (error) {
             console.log(error);
@@ -84,19 +88,6 @@ function App() {
                 element={
                     userDetails ? (
                         <UserLayout>
-                            <Dashboard />
-                        </UserLayout>
-                    ) : (
-                        <Navigate to="/login" />
-                    )
-                }
-            />
-
-            <Route
-                path="/groups"
-                element={
-                    userDetails ? (
-                        <UserLayout>
                             <Groups />
                         </UserLayout>
                     ) : (
@@ -106,14 +97,21 @@ function App() {
             />
 
             <Route
-                path="/logout"
+                path="/groups/:groupId"
                 element={
                     userDetails ? (
-                        <Logout />
+                        <UserLayout>
+                            <GroupExpenses />
+                        </UserLayout>
                     ) : (
                         <Navigate to="/login" />
                     )
                 }
+            />
+
+            <Route
+                path="/logout"
+                element={userDetails ? <Logout /> : <Navigate to="/login" />}
             />
         </Routes>
     );
