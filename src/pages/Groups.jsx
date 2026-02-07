@@ -24,7 +24,7 @@ function Groups() {
         }
     };
 
-    const handleAddGroupSuccess = (data) => {
+    const handleGroupUpdateSuccess = (data) => {
         groups.push(data);
     };
 
@@ -64,13 +64,13 @@ function Groups() {
                 <div className="row g-4">
                     {groups.map((group) => (
                         <div className="col-md-6 col-lg-4" key={group._id}>
-                            <GroupCard group={group} />
+                            <GroupCard group={group} onUpdate={handleGroupUpdateSuccess} />
                         </div>
                     ))}
                 </div>
             )}
 
-            <CreateGroupModal show={show} onHide={() => setShow(false)} onSuccess={handleAddGroupSuccess} />
+            <CreateGroupModal show={show} onHide={() => setShow(false)} onSuccess={handleGroupUpdateSuccess} />
         </div>
     );
 }
