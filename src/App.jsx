@@ -12,6 +12,8 @@ import { useSelector, useDispatch } from "react-redux";
 import { SET_USER } from "./redux/user/action";
 import Groups from "./pages/Groups";
 import GroupExpenses from "./pages/GroupExpenses";
+import ManageUsers from "./pages/ManageUsers";
+
 
 function App() {
     const dispatch = useDispatch();
@@ -108,6 +110,20 @@ function App() {
                     )
                 }
             />
+
+            <Route
+                path="/manage-users"
+                element={
+                    userDetails ? (
+                        <UserLayout>
+                            <ManageUsers />
+                        </UserLayout>
+                    ) : (
+                        <Navigate to="/login" />
+                    )
+                }
+            />
+
 
             <Route
                 path="/logout"
