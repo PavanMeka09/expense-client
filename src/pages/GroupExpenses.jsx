@@ -1,8 +1,51 @@
+import axios from "axios";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { serverEndpoint } from "../config/appConfig";
 
 function GroupExpenses() {
-    // 1. Get the groupId from the URL
     const { groupId } = useParams();
+    const [group, setGroup] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    const fetchGroupDetails = async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const response = await axios.get(
+                `${serverEndpoint}/groups/${groupId}/details`,
+                { withCredentials: true }
+            );
+            setGroup(response.data);
+        } catch (err) {
+            setError("Unable to load group details right now.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchGroupDetails();
+    }, [groupId]);
+
+    if (loading) {
+        return (
+            <div
+                className="container p-5 d-flex flex-column align-items-center justify-content-center"
+                style={{ minHeight: "60vh" }}
+            >
+                <div
+                    className="spinner-grow text-primary"
+                    role="status"
+                    style={{ width: "3rem", height: "3rem" }}
+                >
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="mt-3 text-muted fw-medium">Loading group...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="container py-5">
@@ -11,39 +54,44 @@ function GroupExpenses() {
                     <li className="breadcrumb-item">
                         <Link to="/dashboard">Groups</Link>
                     </li>
-                    <li className="breadcrumb-item active">Expense Details</li>
+                    <li className="breadcrumb-item active">Group Expenses</li>
                 </ol>
             </nav>
 
-            <div className="bg-white p-5 rounded-4 shadow-sm text-center border">
-                <div className="mb-4">
-                    <i className="bi bi-wallet2 display-1 text-primary opacity-25"></i>
+            {error && (
+                <div className="alert alert-danger border-0 shadow-sm rounded-4">
+                    {error}
                 </div>
-                <h2 className="fw-bold">Group Expense Manager</h2>
-                <p className="text-muted">
-                    Working with Group ID:{" "}
-                    <code className="bg-light px-2 rounded">{groupId}</code>
-                </p>
+            )}
 
-                <hr className="my-5" />
+            {group && (
+                <div className="card border-0 shadow-sm rounded-4">
+                    <div className="card-body p-4 p-md-5">
+                        <div className="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                            <div>
+                                <p className="text-muted text-uppercase small fw-bold mb-1">
+                                    Group Name
+                                </p>
+                                <h2 className="fw-bold mb-0">{group.name}</h2>
+                            </div>
+                            <span className="badge rounded-pill bg-primary-subtle text-primary px-3 py-2">
+                                {group.membersEmail.length} Members
+                            </span>
+                        </div>
 
-                <div className="alert alert-info d-inline-block px-5">
-                    <h5>🛠️ Student Assignment</h5>
-                    <p className="mb-0">Implement the following here:</p>
-                    <ul className="text-start mt-3">
-                        <li>
-                            Fetch and display group details (Name, Members).
-                        </li>
-                        <li>
-                            Show a list of past transactions for this group.
-                        </li>
-                        <li>
-                            Add a form to create a new expense with title,
-                            amount, and split logic.
-                        </li>
-                    </ul>
+                        <h6 className="fw-bold mb-3">Members</h6>
+                        <div className="row g-2">
+                            {group.membersEmail.map((member) => (
+                                <div className="col-md-6 col-lg-4" key={member}>
+                                    <div className="bg-light border rounded-3 px-3 py-2 small text-truncate">
+                                        {member}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
