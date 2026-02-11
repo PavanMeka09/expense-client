@@ -7,10 +7,17 @@ function ManageUsers() {
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [updatingUserId, setUpdatingUserId] = useState(null);
+  const [deletingUserId, setDeletingUserId] = useState(null);
+  const [editingUserId, setEditingUserId] = useState(null);
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    role: "Select",
+  });
+  const [editFormData, setEditFormData] = useState({
+    name: "",
     role: "Select",
   });
 
@@ -64,11 +71,30 @@ function ManageUsers() {
     return isValid;
   };
 
+  const validateEditForm = () => {
+    let isValid = true;
+    let newErrors = {};
+
+    if (editFormData.name.trim().length === 0) {
+      isValid = false;
+      newErrors.editName = "Name is required";
+    }
+
+    if (editFormData.role === "Select") {
+      isValid = false;
+      newErrors.editRole = "Role is required";
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (validate()) {
       setActionLoading(true);
+      setMessage(null);
       try {
         const response = await axios.post(
           `${serverEndpoint}/users/`,
@@ -80,7 +106,13 @@ function ManageUsers() {
           { withCredentials: true }
         );
 
-        setUsers([...users, response.data.user]);
+        setUsers((currentUsers) => [...currentUsers, response.data.user]);
+        setFormData({
+          name: "",
+          email: "",
+          role: "Select",
+        });
+        setErrors({});
         setMessage("User added!");
       } catch (error) {
         console.log(error);
@@ -88,6 +120,114 @@ function ManageUsers() {
       } finally {
         setActionLoading(false);
       }
+    }
+  };
+
+  const handleEditClick = (user) => {
+    setMessage(null);
+    setErrors({});
+    setEditingUserId(user._id);
+    setEditFormData({
+      name: user.name,
+      role: user.role,
+    });
+  };
+
+  const handleEditChange = (e) => {
+    const name = e.target.name;
+    const value = e.target.value;
+    setEditFormData((currentFormData) => ({
+      ...currentFormData,
+      [name]: value,
+    }));
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUserId(null);
+    setEditFormData({
+      name: "",
+      role: "Select",
+    });
+    setErrors({});
+  };
+
+  const handleUpdateUser = async (userId) => {
+    if (!validateEditForm()) {
+      return;
+    }
+
+    setUpdatingUserId(userId);
+    setMessage(null);
+    try {
+      await axios.patch(
+        `${serverEndpoint}/users/`,
+        {
+          userId: userId,
+          name: editFormData.name.trim(),
+          role: editFormData.role,
+        },
+        { withCredentials: true }
+      );
+
+      setUsers((currentUsers) =>
+        currentUsers.map((user) =>
+          user._id === userId
+            ? {
+                ...user,
+                name: editFormData.name.trim(),
+                role: editFormData.role,
+              }
+            : user
+        )
+      );
+      setEditingUserId(null);
+      setEditFormData({
+        name: "",
+        role: "Select",
+      });
+      setErrors({});
+      setMessage("User updated!");
+    } catch (error) {
+      console.log(error);
+      setErrors({ message: "Unable to update user, please try again" });
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    const shouldDelete = window.confirm(
+      "Are you sure you want to delete this user?"
+    );
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    setDeletingUserId(userId);
+    setMessage(null);
+    setErrors({});
+    try {
+      await axios.post(
+        `${serverEndpoint}/users/delete`,
+        {
+          userId: userId,
+        },
+        { withCredentials: true }
+      );
+
+      setUsers((currentUsers) =>
+        currentUsers.filter((user) => user._id !== userId)
+      );
+      if (editingUserId === userId) {
+        setEditingUserId(null);
+      }
+      setMessage("User deleted!");
+    } catch (error) {
+      console.log(error);
+      setErrors({ message: "Unable to delete user, please try again" });
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -246,21 +386,110 @@ function ManageUsers() {
                     )}
 
                     {users.length > 0 &&
-                      users.map((user) => (
-                        <tr key={user._id}>
-                          <td className="align-middle">{user.name}</td>
-                          <td className="align-middle">{user.email}</td>
-                          <td className="align-middle">{user.role}</td>
-                          <td className="align-middle">
-                            <button className="btn btn-link text-primary">
-                              Edit
-                            </button>
-                            <button className="btn btn-link text-danger">
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      users.map((user) => {
+                        const isEditingUser = editingUserId === user._id;
+                        const isUpdatingUser = updatingUserId === user._id;
+                        const isDeletingUser = deletingUserId === user._id;
+
+                        return (
+                          <tr key={user._id}>
+                            <td className="align-middle">
+                              {isEditingUser ? (
+                                <>
+                                  <input
+                                    type="text"
+                                    name="name"
+                                    className={
+                                      errors.editName
+                                        ? "form-control form-control-sm is-invalid"
+                                        : "form-control form-control-sm"
+                                    }
+                                    value={editFormData.name}
+                                    onChange={handleEditChange}
+                                  />
+                                  {errors.editName && (
+                                    <div className="invalid-feedback d-block">
+                                      {errors.editName}
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                user.name
+                              )}
+                            </td>
+                            <td className="align-middle">{user.email}</td>
+                            <td className="align-middle">
+                              {isEditingUser ? (
+                                <>
+                                  <select
+                                    name="role"
+                                    className={
+                                      errors.editRole
+                                        ? "form-select form-select-sm is-invalid"
+                                        : "form-select form-select-sm"
+                                    }
+                                    value={editFormData.role}
+                                    onChange={handleEditChange}
+                                  >
+                                    <option value="Select">Select</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="viewer">Viewer</option>
+                                  </select>
+                                  {errors.editRole && (
+                                    <div className="invalid-feedback d-block">
+                                      {errors.editRole}
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                user.role
+                              )}
+                            </td>
+                            <td className="align-middle">
+                              {isEditingUser ? (
+                                <>
+                                  <button
+                                    className="btn btn-link text-primary"
+                                    disabled={isUpdatingUser}
+                                    onClick={() => handleUpdateUser(user._id)}
+                                  >
+                                    {isUpdatingUser ? "Saving..." : "Save"}
+                                  </button>
+                                  <button
+                                    className="btn btn-link text-secondary"
+                                    disabled={isUpdatingUser}
+                                    onClick={handleCancelEdit}
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    className="btn btn-link text-primary"
+                                    onClick={() => handleEditClick(user)}
+                                    disabled={
+                                      deletingUserId !== null ||
+                                      updatingUserId !== null
+                                    }
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    className="btn btn-link text-danger"
+                                    onClick={() => handleDeleteUser(user._id)}
+                                    disabled={
+                                      isDeletingUser || updatingUserId !== null
+                                    }
+                                  >
+                                    {isDeletingUser ? "Deleting..." : "Delete"}
+                                  </button>
+                                </>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
